@@ -17,3 +17,24 @@ class User(db.Model):
             "email": self.email,
             # do not serialize the password, its a security breach
         }
+
+class Drink(db.Model):
+    __tablename__ = "drink"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(380), nullable=False)
+    precio = db.Column(db.Float, nullable=False)
+
+    def __init__(self, name, precio):
+        self.name = name
+        self.precio = precio
+
+
+    def __repr__(self):
+        return f'<Drink {self.name}>'
+    
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "mark": self.precio,
+        }

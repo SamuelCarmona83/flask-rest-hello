@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User
+from models import db, User, Drink
 #from models import Person
 
 app = Flask(__name__)
@@ -36,14 +36,55 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
-@app.route('/user', methods=['GET'])
+@app.route('/users', methods=['GET'])
 def handle_hello():
 
-    response_body = {
-        "msg": "Hello, this is your GET /user response "
-    }
+    users = User.query.all() # SELECT * from users;
 
-    return jsonify(response_body), 200
+    return jsonify([ person.serialize() for person in users ]), 200
+
+@app.route('/drink', methods=['POST', 'GET'])
+def add_drink():
+    if request.method == 'GET':
+        drinks = Drink.query.all()
+        return jsonify([ drink.serialize() for drink in drinks ]), 200
+    body = request.json
+
+    name = body.get("name")
+    price = body.get("price")
+
+    if name != None and price != None:
+        new_drink = Drink(precio=price, name=name)
+        db.session.add(new_drink)
+        db.session.commit()
+        return jsonify(new_drink.serialize()), 201
+    
+    return jsonify({ "msg": "Error missing keys"}), 400
+
+@app.route('/drink/<int:id>', methods=['PUT', 'DELETE'])
+def handle_drink(id):
+    search = Drink.query.filter_by(id=id).one_or_none() # WHERE
+    if request.method == 'PUT':
+        if search != None:
+            body = request.json
+            new_name = body.get("name", None)
+            new_price = body.get("price", None)
+            if new_name != None:
+                search.name = new_name
+            if new_price != None:
+                search.precio = new_price
+            db.session.commit()
+            return jsonify(search.serialize()), 200
+        return jsonify({ "msg": "Drink not found "}), 404
+    else:
+        if search != None:
+            db.session.delete(search)
+            db.session.commit()
+            return jsonify({ "msg": "Removed with success" }), 200
+        else:
+            return jsonify({ "msg": "Drink not found "}), 404
+    return jsonify({ "msg": "Something Happened!" }), 500
+
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
