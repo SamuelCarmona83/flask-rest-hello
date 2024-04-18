@@ -28,6 +28,15 @@ class Drink(db.Model):
         self.name = name
         self.precio = precio
 
+    @classmethod
+    def save(cls, name, price):
+        new_drink = cls(precio=price, name=name)
+        db.session.add(new_drink)
+        db.session.commit()
+        return new_drink
+
+
+        
 
     def __repr__(self):
         return f'<Drink {self.name}>'
@@ -37,4 +46,31 @@ class Drink(db.Model):
             "id": self.id,
             "name": self.name,
             "mark": self.precio,
+        }
+    
+# Many to Many only
+association_table_orders = db.Table(
+    "association_table_orders",
+    db.metadata,
+    db.Column("orders", db.ForeignKey("orders.id")),
+    db.Column("drink", db.ForeignKey("drink.id")),
+)
+    
+class Order(db.Model):
+    __tablename__ = 'orders'
+
+    id = db.Column(db.Integer, primary_key=True)
+    drinks = db.relationship(Drink, secondary=association_table_orders)
+
+    def get_total(self):
+        total = 0
+        for drink in self.drinks:
+            total += drink.precio
+        return total
+    
+    def serialize(self):
+        return {
+            "id": self.id,
+            "drinks": [ drink.serialize() for drink in self.drinks ],
+            "total": f"$ {self.get_total()}"
         }
